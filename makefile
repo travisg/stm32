@@ -34,9 +34,16 @@ OBJCOPY := $(TOOLCHAIN_PREFIX)objcopy
 AS := $(TOOLCHAIN_PREFIX)as
 NM := $(TOOLCHAIN_PREFIX)nm
 
+LIBGCC := $(shell $(CC) $(CFLAGS) --print-libgcc-file-name)
+
 OBJS := \
 	start.o \
-	main.o
+	main.o \
+	io.o \
+	printf.o \
+	strlen.o \
+	ctype.o \
+	debug.o \
 
 OBJS := $(addprefix $(BUILDDIR)/,$(OBJS))
 
@@ -47,7 +54,7 @@ DEPS := $(OBJS:.o=.d)
 all: $(BUILDDIR)/$(TARGET).bin $(BUILDDIR)/$(TARGET).lst $(BUILDDIR)/$(TARGET).sym
 
 $(BUILDDIR)/$(TARGET):  $(OBJS)
-	$(LD) $(LDFLAGS) $(OBJS) -o $@ $(LDLIBS)
+	$(LD) $(LDFLAGS) $(OBJS) -o $@ $(LDLIBS) $(LIBGCC)
 
 $(BUILDDIR)/$(TARGET).bin: $(BUILDDIR)/$(TARGET)
 	$(OBJCOPY) -O binary $< $@

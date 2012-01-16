@@ -1,5 +1,7 @@
 #include <sys/types.h>
 #include <stdint.h>
+#include <stdio.h>
+#include <debug.h>
 #include <stm32.h>
 
 /* externals */
@@ -9,28 +11,6 @@ extern unsigned int __bss_start, __bss_end;
 int somedata = 99;
 int somedata2 = 100;
 int somebssdata[3];
-
-struct stm32_rcc_regs *rcc = (void *)RCC_BASE;
-struct stm32_afio_regs *afio = (void *)AFIO_BASE;
-struct stm32_gpio_regs *gpioa = (void *)GPIOA_BASE;
-struct stm32_usart_regs *usart1 = (void *)USART1_BASE;
-
-static void putchar(char c)
-{
-	while ((usart1->SR & (1<<7)) == 0)
-		;
-	usart1->DR = c & 0xff;
-}
-
-static void puts(const char *str)
-{
-	while (*str) {
-		if (*str == '\n')
-			putchar('\r');
-		putchar(*str);
-		str++;
-	}
-}
 
 void _main(void)
 {
@@ -67,9 +47,7 @@ void _main(void)
 
 	usart1->CR1 |= (1<<13); // start the uart
 
-	for (;;) {
-		puts("fucccccckkkkkkkk!\n");
-	}
+	hexdump(rcc, 16);
 	
 	for (;;)
 		;

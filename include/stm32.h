@@ -113,3 +113,8 @@ struct stm32_usart_regs {
 	volatile uint32_t GTPR;
 };
 
+static struct stm32_rcc_regs *const rcc = (void *)RCC_BASE;
+static struct stm32_afio_regs *const afio = (void *)AFIO_BASE;
+static struct stm32_gpio_regs *const gpioa = (void *)GPIOA_BASE;
+static struct stm32_usart_regs *const usart1 = (void *)USART1_BASE;
+
