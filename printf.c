@@ -25,7 +25,7 @@
 #include <stdarg.h>
 #include <sys/types.h>
 #include <printf.h>
-//#include <string.h>
+#include <string.h>
 #include <io.h>
 
 void putc(char c)

@@ -113,6 +113,17 @@ struct stm32_usart_regs {
 	volatile uint32_t GTPR;
 };
 
+/* clocks */
+#define _CLOCK_APB1	 (0 << 8)
+#define _CLOCK_APB2	 (1 << 8)
+#define _CLOCK_AHB	 (2 << 8)
+#define _CLOCK_BUS_MASK (3 << 8)
+#define _CLOCK_MASK  (0xff)
+#define CLOCK_USART1 (_CLOCK_APB2 | 14)
+#define CLOCK_GPIOA  (_CLOCK_APB2 | 2)
+#define CLOCK_AFIO   (_CLOCK_APB2 | 0)
+void stm32_clock_set_enable(uint clock, bool en);
+
 static struct stm32_rcc_regs *const rcc = (void *)RCC_BASE;
 static struct stm32_afio_regs *const afio = (void *)AFIO_BASE;
 static struct stm32_gpio_regs *const gpioa = (void *)GPIOA_BASE;

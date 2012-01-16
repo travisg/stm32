@@ -12,6 +12,41 @@ int somedata = 99;
 int somedata2 = 100;
 int somebssdata[3];
 
+static void usart1_init(void)
+{
+	/* configure usart1 */
+	usart1->CR1 = (0<<13) | (1<<3) | (0<<2);
+	usart1->BRR = (4<<4)|(5<<0);
+	usart1->CR2 = 0;
+	usart1->CR3 = 0;
+
+	usart1->CR1 |= (1<<13); // start the uart
+}
+
+void stm32_clock_set_enable(uint clock, bool en)
+{
+	volatile uint32_t *reg;
+	switch (clock & _CLOCK_BUS_MASK) {
+		case _CLOCK_APB1:
+			reg = &rcc->APB1ENR;
+			break;
+		case _CLOCK_APB2:
+			reg = &rcc->APB2ENR;
+			break;
+		case _CLOCK_AHB:
+			reg = &rcc->AHBENR;
+			break;
+		default:
+			panic("bad clock 0x%x\n", clock);
+			return;
+	}
+	if (en) {
+		*reg |= 1 << (clock & _CLOCK_MASK);
+	} else {
+		*reg &= ~(1 << (clock & _CLOCK_MASK));
+	}
+}
+
 void _main(void)
 {
 	/* copy data from rom */
@@ -29,26 +64,21 @@ void _main(void)
 		*bss++ = 0;
 
 	/* clock the usart */
-	rcc->APB2ENR |= (1<<14)|(1<<2)|(1<<0); // USART1/GPIOA/AFIO
+	stm32_clock_set_enable(CLOCK_USART1, true);
+	stm32_clock_set_enable(CLOCK_GPIOA, true);
+	stm32_clock_set_enable(CLOCK_AFIO, true);
 
 	/* configure the usart1 pins */
+	// USART1 is connected to GPIOA_pin9, GPIOA_pin10
 	afio->MAPR &= ~(1<<2); // clear USART1 remap
-
 	RMW(gpioa->CRH, 4, 4, (2 << 2)|(3 << 0)); // pin 9, alternate function output push-pull, 50mhz
 	RMW(gpioa->CRH, 8, 4, (1 << 2)|(0 << 0)); // pin 10, input floating
 
-	// USART1 is connected to GPIOA_pin9, GPIOA_pin10
+	usart1_init();
 
-	/* write something out of the usart */
-	usart1->CR1 = (0<<13) | (1<<3) | (0<<2);
-	usart1->BRR = (4<<4)|(5<<0);
-	usart1->CR2 = (0<<12);
-	usart1->CR3 = 0;
+	printf("RCC regs:\n");
+	hexdump(rcc, sizeof(*rcc));
 
-	usart1->CR1 |= (1<<13); // start the uart
-
-	hexdump(rcc, 16);
-	
 	for (;;)
 		;
 }

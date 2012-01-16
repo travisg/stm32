@@ -10,6 +10,9 @@ ASMFLAGS :=
 LDFLAGS := --script=system-twosegment.ld
 LDLIBS :=
 
+COMPILEFLAGS += -ffunction-sections -fdata-sections
+LDFLAGS += -gc-sections
+
 UNAME := $(shell uname -s)
 ARCH := $(shell uname -m)
 
