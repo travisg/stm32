@@ -1,3 +1,4 @@
+include macros.mk
 
 TARGET := stm32
 BUILDDIR := build-$(TARGET)
@@ -43,10 +44,9 @@ OBJS := \
 	start.o \
 	main.o \
 	io.o \
-	printf.o \
-	strlen.o \
-	ctype.o \
 	debug.o \
+
+include libc/rules.mk
 
 OBJS := $(addprefix $(BUILDDIR)/,$(OBJS))
 
