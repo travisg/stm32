@@ -24,6 +24,7 @@
 #include <debug.h>
 #include <printf.h>
 #include <string.h>
+#include <ctype.h>
 
 #if 0
 void spin(uint32_t usecs)

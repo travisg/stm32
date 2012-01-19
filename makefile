@@ -3,7 +3,7 @@ TARGET := stm32
 BUILDDIR := build-$(TARGET)
 
 # compiler flags, default libs to link against
-COMPILEFLAGS := -g -Os -mcpu=cortex-m3 -mthumb -Wall -W -Iinclude -fno-builtin
+COMPILEFLAGS := -g -Os -mcpu=cortex-m3 -mthumb -Wall -W -Iinclude -fno-builtin -Wno-unused-parameter
 CFLAGS :=
 CPPFLAGS :=
 ASMFLAGS :=
