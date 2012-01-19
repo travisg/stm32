@@ -25,6 +25,8 @@ ARCH := $(shell uname -m)
 # ...
 # endif
 
+COMPILEFLAGS += -DSTM32F10X_HD_VL=1
+
 TOOLCHAIN_PREFIX ?= arm-elf-
 CC := $(TOOLCHAIN_PREFIX)gcc
 LD := $(TOOLCHAIN_PREFIX)ld
@@ -42,6 +44,7 @@ OBJS := \
 
 include libc/rules.mk
 include CMSIS/rules.mk
+include STM32F10x_StdPeriph_Driver/rules.mk
 
 OBJS := $(addprefix $(BUILDDIR)/,$(OBJS))
 
