@@ -47,7 +47,7 @@ void stm32_clock_set_enable(uint clock, bool en)
 	}
 }
 
-void _main(void)
+void _start(void)
 {
 	/* copy data from rom */
 	if (&__data_start != &__data_start_rom) {

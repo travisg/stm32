@@ -5,7 +5,7 @@
 .global _vectab
 _vectab:
 	.word _initial_stack_end
-	.word _main
+	.word _start
 
 .section .bss.initial_stack
 .align 3
