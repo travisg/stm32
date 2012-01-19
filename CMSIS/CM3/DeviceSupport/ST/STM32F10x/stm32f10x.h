@@ -37,7 +37,7 @@
 #ifdef __cplusplus
  extern "C" {
 #endif 
-  
+
 /** @addtogroup Library_configuration_section
   * @{
   */
@@ -462,6 +462,9 @@ typedef enum IRQn
 #include "system_stm32f10x.h"
 #include <stdint.h>
 
+  /* TKG - added to make code shut up */
+#define assert_param(x)
+  
 /** @addtogroup Exported_types
   * @{
   */  

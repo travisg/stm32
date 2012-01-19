@@ -1,6 +1,7 @@
 LOCAL_DIR := $(GET_LOCAL_DIR)
 
 COMPILEFLAGS += -I$(LOCAL_DIR)/CM3/CoreSupport
+COMPILEFLAGS += -I$(LOCAL_DIR)/CM3/DeviceSupport/ST/STM32F10x
 
 OBJS += \
 	$(LOCAL_DIR)/CM3/CoreSupport/core_cm3.o
