@@ -25,10 +25,6 @@ ARCH := $(shell uname -m)
 # ...
 # endif
 
-CFLAGS += $(COMPILEFLAGS)
-CPPFLAGS += $(COMPILEFLAGS)
-ASMFLAGS += $(COMPILEFLAGS)
-
 TOOLCHAIN_PREFIX ?= arm-elf-
 CC := $(TOOLCHAIN_PREFIX)gcc
 LD := $(TOOLCHAIN_PREFIX)ld
@@ -38,8 +34,6 @@ OBJCOPY := $(TOOLCHAIN_PREFIX)objcopy
 AS := $(TOOLCHAIN_PREFIX)as
 NM := $(TOOLCHAIN_PREFIX)nm
 
-LIBGCC := $(shell $(CC) $(CFLAGS) --print-libgcc-file-name)
-
 OBJS := \
 	start.o \
 	main.o \
@@ -47,12 +41,19 @@ OBJS := \
 	debug.o \
 
 include libc/rules.mk
+include CMSIS/rules.mk
 
 OBJS := $(addprefix $(BUILDDIR)/,$(OBJS))
 
 DEPS := $(OBJS:.o=.d)
 
 .PHONY: all
+
+CFLAGS += $(COMPILEFLAGS)
+CPPFLAGS += $(COMPILEFLAGS)
+ASMFLAGS += $(COMPILEFLAGS)
+
+LIBGCC := $(shell $(CC) $(CFLAGS) --print-libgcc-file-name)
 
 all: $(BUILDDIR)/$(TARGET).bin $(BUILDDIR)/$(TARGET).lst $(BUILDDIR)/$(TARGET).sym
 
