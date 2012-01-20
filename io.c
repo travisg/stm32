@@ -13,6 +13,8 @@ void _dputc(char c)
 	while (USART_GetFlagStatus(USART1, USART_FLAG_TXE) == 0)
 		;
 	USART_SendData(USART1, c);
+	while (USART_GetFlagStatus(USART1, USART_FLAG_TC) == 0)
+		;
 }
 
 int dgetc(char *c, bool wait)
