@@ -7,6 +7,7 @@
 #include <stm32f10x_usart.h>
 #include <stm32f10x_rcc.h>
 #include <stm32f10x_gpio.h>
+#include <core_cm3.h>
 
 /* externals */
 extern unsigned int __data_start_rom, __data_start, __data_end;
@@ -23,17 +24,7 @@ void stm32_USART1_IRQ(void)
 
 static void usart1_init(void)
 {
-#if 0
-	/* configure usart1 */
-	usart1->CR1 = (0<<13) | (1<<3) | (0<<2);
-	usart1->BRR = (4<<4)|(5<<0);
-	usart1->CR2 = 0;
-	usart1->CR3 = 0;
-
-	usart1->CR1 |= (1<<13); // start the uart
-#else
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART1, ENABLE);
-
 	USART_InitTypeDef init;
 
 	init.USART_BaudRate = 115200;
@@ -46,31 +37,40 @@ static void usart1_init(void)
 	USART_Init(USART1, &init);
 
 	USART_ITConfig(USART1, USART_IT_RXNE, DISABLE);
-#endif
+	USART_Cmd(USART1, ENABLE);
 }
 
-void stm32_clock_set_enable(uint clock, bool en)
+static void init_leds(void)
 {
-	volatile uint32_t *reg;
-	switch (clock & _CLOCK_BUS_MASK) {
-		case _CLOCK_APB1:
-			reg = &rcc->APB1ENR;
-			break;
-		case _CLOCK_APB2:
-			reg = &rcc->APB2ENR;
-			break;
-		case _CLOCK_AHB:
-			reg = &rcc->AHBENR;
-			break;
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOF, ENABLE);
+
+	GPIO_InitTypeDef init;
+	init.GPIO_Pin = GPIO_Pin_6;
+	init.GPIO_Speed = GPIO_Speed_50MHz;
+	init.GPIO_Mode = GPIO_Mode_Out_PP;
+
+	GPIO_Init(GPIOF, &init);
+	init.GPIO_Pin = GPIO_Pin_7;
+	GPIO_Init(GPIOF, &init);
+	init.GPIO_Pin = GPIO_Pin_8;
+	GPIO_Init(GPIOF, &init);
+	init.GPIO_Pin = GPIO_Pin_9;
+	GPIO_Init(GPIOF, &init);
+}
+
+static void set_led(uint led, bool en)
+{
+	uint16_t pin;
+
+	switch (led) {
 		default:
-			panic("bad clock 0x%x\n", clock);
-			return;
+		case 0: pin = GPIO_Pin_6; break;
+		case 1: pin = GPIO_Pin_7; break;
+		case 2: pin = GPIO_Pin_8; break;
+		case 3: pin = GPIO_Pin_9; break;
 	}
-	if (en) {
-		*reg |= 1 << (clock & _CLOCK_MASK);
-	} else {
-		*reg &= ~(1 << (clock & _CLOCK_MASK));
-	}
+
+	GPIO_WriteBit(GPIOF, pin, en ? Bit_SET : Bit_RESET);
 }
 
 void _start(void)
@@ -89,18 +89,7 @@ void _start(void)
 	while (bss != &__bss_end)
 		*bss++ = 0;
 
-	/* clock the usart */
-//	stm32_clock_set_enable(CLOCK_USART1, true);
-//	stm32_clock_set_enable(CLOCK_GPIOA, true);
-//	stm32_clock_set_enable(CLOCK_AFIO, true);
-
 	/* configure the usart1 pins */
-#if 0
-	// USART1 is connected to GPIOA_pin9, GPIOA_pin10
-	afio->MAPR &= ~(1<<2); // clear USART1 remap
-	RMW(gpioa->CRH, 4, 4, (2 << 2)|(3 << 0)); // pin 9, alternate function output push-pull, 50mhz
-	RMW(gpioa->CRH, 8, 4, (1 << 2)|(0 << 0)); // pin 10, input floating
-#else
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, ENABLE);
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE);
 
@@ -116,13 +105,26 @@ void _start(void)
 	init.GPIO_Speed = GPIO_Speed_50MHz;
 	init.GPIO_Mode = GPIO_Mode_IN_FLOATING;
 	GPIO_Init(GPIOA, &init);
-#endif
 
 	usart1_init();
 
-	printf("RCC regs:\n");
-	hexdump(rcc, sizeof(*rcc));
+	printf("how are you gentlemen\n");
 
-	for (;;)
-		;
+	RCC_ClocksTypeDef clocks;
+	RCC_GetClocksFreq(&clocks);
+	printf("SYSCLKFrequency %u\n", clocks.SYSCLK_Frequency);
+	printf("HCLKFrequency %u\n", clocks.HCLK_Frequency);
+	printf("PCLK1Frequency %u\n", clocks.PCLK1_Frequency);
+	printf("PCLK2Frequency %u\n", clocks.PCLK2_Frequency);
+	printf("ADCCLKFrequency %u\n", clocks.ADCCLK_Frequency);
+
+	init_leds();
+
+	uint32_t val;
+	for (val = 0; ; val++) {
+		set_led(0, val & 0x1);
+		set_led(1, val & 0x2);
+		set_led(2, val & 0x4);
+		set_led(3, val & 0x8);
+	}
 }
