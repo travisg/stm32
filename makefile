@@ -25,7 +25,7 @@ ARCH := $(shell uname -m)
 # ...
 # endif
 
-COMPILEFLAGS += -DSTM32F10X_HD_VL=1
+COMPILEFLAGS += -DSTM32F10X_XL=1
 
 TOOLCHAIN_PREFIX ?= arm-elf-
 CC := $(TOOLCHAIN_PREFIX)gcc
