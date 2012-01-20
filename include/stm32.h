@@ -2,6 +2,7 @@
 
 #include <reg.h>
 
+#if 0
 /* stm32f10x defines */
 #define TIM2_BASE	(0x40000000)
 #define TIM3_BASE	(0x40000400)
@@ -58,6 +59,10 @@
 #define FSMC_BASE	(0xa0000000)
 
 #define FSMC_BASE	(0xa0000000)
+#else
+#include <stm32f10x.h>
+
+#endif
 
 /* RCC regs */
 struct stm32_rcc_regs {
