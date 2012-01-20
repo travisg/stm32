@@ -7,6 +7,8 @@
 #include <stm32f10x_usart.h>
 #include <stm32f10x_rcc.h>
 #include <stm32f10x_gpio.h>
+#include <stm32f10x_flash.h>
+#include <stm32f10x_dbgmcu.h>
 #include <core_cm3.h>
 
 /* externals */
@@ -123,21 +125,28 @@ void _start(void)
 
 	printf("how are you gentlemen\n");
 
+	printf("devid 0x%x\n", DBGMCU_GetDEVID());
+
 	dump_clocks();
+	
+	// bring up te HSE
+	printf("enabling external crystal\n");
+	RCC_HSEConfig(RCC_HSE_ON);
+	RCC_WaitForHSEStartUp();
+	printf("external crystal up\n");
 
 	// try to program up the pll
 	printf("enabling pll\n");
-	RCC_PLLConfig(RCC_PLLSource_HSI_Div2, RCC_PLLMul_9);
+	RCC_PLLConfig(RCC_PLLSource_HSE_Div1, RCC_PLLMul_9);
 	RCC_PLLCmd(ENABLE);
 
 	while (RCC_GetFlagStatus(RCC_FLAG_PLLRDY) == RESET)
 		;
 	printf("pll latched\n");
 
-	dump_clocks();
-
 	printf("setting sysclk to pll\n");
 
+	FLASH_SetLatency(FLASH_Latency_2);
 	RCC_HCLKConfig(RCC_SYSCLK_Div1);
 	RCC_PCLK1Config(RCC_HCLK_Div2);
 	RCC_PCLK2Config(RCC_HCLK_Div1);
