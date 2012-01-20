@@ -37,7 +37,7 @@ AS := $(TOOLCHAIN_PREFIX)as
 NM := $(TOOLCHAIN_PREFIX)nm
 
 OBJS := \
-	start.o \
+	vectab.o \
 	main.o \
 	io.o \
 	debug.o \

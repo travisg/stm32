@@ -12,6 +12,11 @@ int somedata = 99;
 int somedata2 = 100;
 int somebssdata[3];
 
+void stm32_USART1_IRQ(void)
+{
+
+}
+
 static void usart1_init(void)
 {
 	/* configure usart1 */
