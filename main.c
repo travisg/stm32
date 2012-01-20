@@ -9,15 +9,86 @@
 #include <stm32f10x_gpio.h>
 #include <stm32f10x_flash.h>
 #include <stm32f10x_dbgmcu.h>
+#include <misc.h>
 #include <core_cm3.h>
 
 /* externals */
 extern unsigned int __data_start_rom, __data_start, __data_end;
 extern unsigned int __bss_start, __bss_end;
 
-int somedata = 99;
-int somedata2 = 100;
-int somebssdata[3];
+void _nmi(void)
+{
+	printf("nmi\n");
+	halt();
+}
+
+void _hardfault(void)
+{
+	printf("hardfault\n");
+	halt();
+}
+
+void _memmanage(void)
+{
+	printf("memmanage\n");
+	halt();
+}
+
+void _busfault(void)
+{
+	printf("busfault\n");
+	halt();
+}
+
+void _usagefault(void)
+{
+	printf("usagefault\n");
+	halt();
+}
+
+void _svc(void)
+{
+	printf("svc\n");
+	halt();
+}
+
+void _pendsv(void)
+{
+	printf("pendsv\n");
+	halt();
+}
+
+volatile uint32_t tick_counter = 0;
+const uint32_t systick_counter = 10000000;
+const uint32_t systick_rate = 80000000;
+
+void _systick(void)
+{
+	tick_counter++; 
+}
+
+uint32_t current_time(void)
+{
+	do {
+		uint32_t t = tick_counter;
+		uint32_t delta = SysTick->VAL;
+		uint32_t t2 = tick_counter;
+		if (t2 != t)
+			continue;
+
+		uint32_t time = (t2 * systick_counter + (systick_counter - delta)) / (systick_rate / 1000000);
+
+		return time;
+	} while (true);
+}
+
+void spin(uint32_t usecs)
+{
+	uint32_t t = current_time();
+
+	while ((current_time() - t) < usecs)
+		;
+}
 
 void stm32_USART1_IRQ(void)
 {
@@ -73,6 +144,29 @@ static void set_led(uint led, bool en)
 	}
 
 	GPIO_WriteBit(GPIOF, pin, en ? Bit_SET : Bit_RESET);
+}
+
+#define LED_CS GPIO_Pin_6
+#define LED_WR GPIO_Pin_7
+#define LED_DATA GPIO_Pin_8
+
+void led_panel_write(uint32_t dat, size_t len)
+{
+	uint i;
+	for (i = len; i > 0; i--) {
+		GPIO_ResetBits(GPIOF, LED_WR);
+		GPIO_WriteBit(GPIOF, LED_DATA, (dat & (1<<(i-1))) ? SET : RESET);
+		GPIO_SetBits(GPIOF, LED_WR);
+	}
+}
+
+void led_panel_command_write(uint32_t cmd, size_t len)
+{
+	GPIO_ResetBits(GPIOF, LED_CS);
+
+	led_panel_write(cmd, len);
+
+	GPIO_SetBits(GPIOF, LED_CS);
 }
 
 static void dump_clocks(void)
@@ -160,11 +254,48 @@ void _start(void)
 
 	dump_clocks();
 
+	/* try to fire the systick */
+//	__set_BASEPRI(8 << __NVIC_PRIO_BITS);
+
+	/* start the systick timer */
+	NVIC_SetVectorTable(0, 0);
+	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_4);
+	uint32_t pri = NVIC_EncodePriority(3, 0, 0);	
+	NVIC_SetPriority(SysTick_IRQn, pri);
+	SysTick_CLKSourceConfig(SysTick_CLKSource_HCLK);
+	SysTick_Config(systick_counter);
+
+#if 0
 	uint32_t val;
 	for (val = 0; ; val++) {
 		set_led(0, val & 0x1);
-//		set_led(1, val & 0x2);
-//		set_led(2, val & 0x4);
-//		set_led(3, val & 0x8);
+		set_led(1, val & 0x2);
+		set_led(2, val & 0x4);
+		set_led(3, val & 0x8);
 	}
+#endif
+
+	/* write the boot sequence */
+	led_panel_command_write(0b100000000010, 12); // SYS_EN
+	led_panel_command_write(0b100000000110, 12); // LED_ON
+	led_panel_command_write(0b100000010000, 12); // BLINK_OFF
+	led_panel_command_write(0b100000110000, 12); // INT_RC
+	led_panel_command_write(0b100001001000, 12); // n-mos open drain, 16 com
+	led_panel_command_write(0b100101011110, 12); // PWM_CTRL | 0xf
+
+	for(uint j = 0; ; j++) {
+		GPIO_ResetBits(GPIOF, LED_CS);
+		led_panel_write(0b1010000000, 10); // start write at address 0
+
+		for (int i = 0; i < 96; i++) {
+			led_panel_write(((j % 96) > i) ? 0b1111: 0, 4);
+		}
+		GPIO_SetBits(GPIOF, LED_CS);
+
+		spin(10000);
+	}
+
+	for(;;)
+		;
 }
+
