@@ -73,6 +73,17 @@ static void set_led(uint led, bool en)
 	GPIO_WriteBit(GPIOF, pin, en ? Bit_SET : Bit_RESET);
 }
 
+static void dump_clocks(void)
+{
+	RCC_ClocksTypeDef clocks;
+	RCC_GetClocksFreq(&clocks);
+	printf("SYSCLKFrequency %u\n", clocks.SYSCLK_Frequency);
+	printf("HCLKFrequency %u\n", clocks.HCLK_Frequency);
+	printf("PCLK1Frequency %u\n", clocks.PCLK1_Frequency);
+	printf("PCLK2Frequency %u\n", clocks.PCLK2_Frequency);
+	printf("ADCCLKFrequency %u\n", clocks.ADCCLK_Frequency);
+}
+
 void _start(void)
 {
 	/* copy data from rom */
@@ -106,25 +117,45 @@ void _start(void)
 	init.GPIO_Mode = GPIO_Mode_IN_FLOATING;
 	GPIO_Init(GPIOA, &init);
 
+	init_leds();
+
 	usart1_init();
 
 	printf("how are you gentlemen\n");
 
-	RCC_ClocksTypeDef clocks;
-	RCC_GetClocksFreq(&clocks);
-	printf("SYSCLKFrequency %u\n", clocks.SYSCLK_Frequency);
-	printf("HCLKFrequency %u\n", clocks.HCLK_Frequency);
-	printf("PCLK1Frequency %u\n", clocks.PCLK1_Frequency);
-	printf("PCLK2Frequency %u\n", clocks.PCLK2_Frequency);
-	printf("ADCCLKFrequency %u\n", clocks.ADCCLK_Frequency);
+	dump_clocks();
 
-	init_leds();
+	// try to program up the pll
+	printf("enabling pll\n");
+	RCC_PLLConfig(RCC_PLLSource_HSI_Div2, RCC_PLLMul_9);
+	RCC_PLLCmd(ENABLE);
+
+	while (RCC_GetFlagStatus(RCC_FLAG_PLLRDY) == RESET)
+		;
+	printf("pll latched\n");
+
+	dump_clocks();
+
+	printf("setting sysclk to pll\n");
+
+	RCC_HCLKConfig(RCC_SYSCLK_Div1);
+	RCC_PCLK1Config(RCC_HCLK_Div2);
+	RCC_PCLK2Config(RCC_HCLK_Div1);
+	RCC_SYSCLKConfig(RCC_SYSCLKSource_PLLCLK);
+
+	usart1_init();
+
+	set_led(3, 0);
+	set_led(3, 1);
+	printf("after new sysclk\n");
+
+	dump_clocks();
 
 	uint32_t val;
 	for (val = 0; ; val++) {
 		set_led(0, val & 0x1);
-		set_led(1, val & 0x2);
-		set_led(2, val & 0x4);
-		set_led(3, val & 0x8);
+//		set_led(1, val & 0x2);
+//		set_led(2, val & 0x4);
+//		set_led(3, val & 0x8);
 	}
 }
