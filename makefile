@@ -5,7 +5,7 @@ BUILDDIR := build-$(TARGET)
 
 # compiler flags, default libs to link against
 COMPILEFLAGS := -g -Os -mcpu=cortex-m3 -mthumb -Wall -W -Iinclude -fno-builtin -Wno-unused-parameter
-CFLAGS :=
+CFLAGS := -std=c99
 CPPFLAGS :=
 ASMFLAGS :=
 LDFLAGS := --script=system-twosegment.ld
