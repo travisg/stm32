@@ -95,9 +95,16 @@ void stm32_USART1_IRQ(void)
 	printf("USART1_IRQ\n");
 }
 
-static void usart1_init(void)
+static void usart_init(USART_TypeDef *usart)
 {
-	RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART1, ENABLE);
+	if (usart == USART1) {
+		RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART1, ENABLE);
+	} else if (usart == USART2) {
+		RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART2, ENABLE);
+	} else if (usart == USART3) {
+		RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART3, ENABLE);
+	}
+
 	USART_InitTypeDef init;
 
 	init.USART_BaudRate = 115200;
@@ -107,10 +114,10 @@ static void usart1_init(void)
 	init.USART_Mode = USART_Mode_Tx;
 	init.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
 
-	USART_Init(USART1, &init);
+	USART_Init(usart, &init);
 
-	USART_ITConfig(USART1, USART_IT_RXNE, DISABLE);
-	USART_Cmd(USART1, ENABLE);
+	USART_ITConfig(usart, USART_IT_RXNE, DISABLE);
+	USART_Cmd(usart, ENABLE);
 }
 
 static void init_leds(void)
@@ -196,6 +203,9 @@ void _start(void)
 	while (bss != &__bss_end)
 		*bss++ = 0;
 
+
+	USART_TypeDef *debug_usart;
+#if TARGET_STM3210E
 	/* configure the usart1 pins */
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, ENABLE);
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE);
@@ -213,9 +223,32 @@ void _start(void)
 	init.GPIO_Mode = GPIO_Mode_IN_FLOATING;
 	GPIO_Init(GPIOA, &init);
 
+	debug_usart = USART1;
+#endif
+#if TARGET_STM32_P107
+	/* configure the usart3 pins */
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOD, ENABLE);
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE);
+
+	GPIO_PinRemapConfig(GPIO_FullRemap_USART3, ENABLE);
+
+	GPIO_InitTypeDef init;
+	init.GPIO_Pin = GPIO_Pin_8;
+	init.GPIO_Speed = GPIO_Speed_50MHz;
+	init.GPIO_Mode = GPIO_Mode_AF_PP;
+	GPIO_Init(GPIOD, &init);
+
+	init.GPIO_Pin = GPIO_Pin_9;
+	init.GPIO_Speed = GPIO_Speed_50MHz;
+	init.GPIO_Mode = GPIO_Mode_IN_FLOATING;
+	GPIO_Init(GPIOD, &init);
+
+	debug_usart = USART3;
+#endif
+
 	init_leds();
 
-	usart1_init();
+	usart_init(debug_usart);
 
 	printf("how are you gentlemen\n");
 
@@ -231,28 +264,38 @@ void _start(void)
 
 	// try to program up the pll
 	printf("enabling pll\n");
+#if STM32F10X_CL
+	RCC_PLLConfig(RCC_PLLSource_PREDIV1, RCC_PLLMul_4);
+#else
 	RCC_PLLConfig(RCC_PLLSource_HSE_Div1, RCC_PLLMul_9);
+#endif
 	RCC_PLLCmd(ENABLE);
 
 	while (RCC_GetFlagStatus(RCC_FLAG_PLLRDY) == RESET)
 		;
 	printf("pll latched\n");
 
-	printf("setting sysclk to pll\n");
+	printf("setting up clocks\n");
 
 	FLASH_SetLatency(FLASH_Latency_2);
 	RCC_HCLKConfig(RCC_SYSCLK_Div1);
 	RCC_PCLK1Config(RCC_HCLK_Div2);
 	RCC_PCLK2Config(RCC_HCLK_Div1);
+#if STM32F10X_CL
+	RCC_SYSCLKConfig(RCC_SYSCLKSource_HSE);
+#else
 	RCC_SYSCLKConfig(RCC_SYSCLKSource_PLLCLK);
+#endif
 
-	usart1_init();
+	usart_init(debug_usart);
 
 	set_led(3, 0);
 	set_led(3, 1);
 	printf("after new sysclk\n");
 
 	dump_clocks();
+
+	printf("done!\n");
 
 	/* try to fire the systick */
 //	__set_BASEPRI(8 << __NVIC_PRIO_BITS);
