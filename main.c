@@ -60,7 +60,7 @@ void _pendsv(void)
 
 volatile uint32_t tick_counter = 0;
 const uint32_t systick_counter = 10000000;
-const uint32_t systick_rate = 80000000;
+const uint32_t systick_rate = HSE_VALUE;
 
 void _systick(void)
 {
@@ -307,6 +307,17 @@ void _start(void)
 	NVIC_SetPriority(SysTick_IRQn, pri);
 	SysTick_CLKSourceConfig(SysTick_CLKSource_HCLK);
 	SysTick_Config(systick_counter);
+
+#if 0
+	uint32_t last = 0;
+	for (;;) {
+		uint32_t now = current_time();
+		if (now - last >= 1000000) {
+			printf("time %d\n", now);
+			last = now;
+		}
+	}
+#endif
 
 #if 0
 	uint32_t val;
